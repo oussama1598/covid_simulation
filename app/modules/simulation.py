@@ -100,6 +100,8 @@ class Simulation(VGroup):
                 filter(lambda person: person.status == 'S', city.people))
             infected_people = list(
                 filter(lambda person: person.status == 'I', city.people))
+            recovered_people = list(
+                filter(lambda person: person.status == 'I', city.people))
 
             for infected_person in infected_people:
                 for susceptible_person in susceptible_people:
@@ -114,6 +116,8 @@ class Simulation(VGroup):
 
             if self.social_distance_factor > 0 or self.travel_rate > 0:
                 for person in susceptible_people + infected_people:
+                    person.repel_from_people = []
+
                     if person.social_distance_factor > 0:
                         repel_from_people = infected_people if self.limit_social_distancing_to_infectious else infected_people + susceptible_people
                         repel_from_people_positions = np.array(
@@ -151,6 +155,9 @@ class Simulation(VGroup):
                                     run_time=1,
                                 )
                             )
+
+                for person in recovered_people:
+                    person.repel_from_people = []
 
     def get_stats(self):
         total_susceptible_people = 0

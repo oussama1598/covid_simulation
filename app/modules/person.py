@@ -171,6 +171,9 @@ class Person(Animated):
 
         self.status = status
 
+        if status == 'R':
+            self.repel_from_people = []
+
         if status == 'I':
             self.infection_start_time = self.time
 
