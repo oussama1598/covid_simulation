@@ -7,43 +7,36 @@ import copy
 
 
 class Simulation(VGroup):
-    number_of_cities = 1
-    city_size = 5
-    population = 100
-
-    # Social Distancing
-    limit_social_distancing_to_infectious = False
-
-    # Person config
-    infection_radius = .2
-    wall_buffer = 1 / 3
-    wander_step_size = 1
-    wander_step_duration = 1
-    gravity_strength = 1
-
-    social_distance_factor = 0
-    repel_from_max_number_of_people = 10
-
-    max_speed = 1
-
-    p_symptomatic_on_infection = 1
-
-    # Virus config
-    infection_duration = 5
-    probability_of_infection_per_day = .2
-
-    # Travel
-    travel_rate = .02
-
-    colors_set = {
-        'S': BLUE,
-        'I': RED,
-        'R': WHITE,
-        'A': YELLOW
-    }
-
-    def __init__(self, **kwargs):
+    def __init__(self, config={}, **kwargs):
         super().__init__(**kwargs)
+
+        self.number_of_cities = config['number_of_cities']
+        self.city_size = config['city_size']
+        self.population = config['population']
+
+        # Social Distancing
+        self.limit_social_distancing_to_infectious = config['limit_social_distancing_to_infectious']
+        self.social_distance_factor = config['social_distance_factor']
+        self.repel_from_max_number_of_people = config['repel_from_max_number_of_people']
+
+        # Person config
+        self.radius = config['radius']
+        self.infection_radius = config['infection_radius']
+        self.wall_buffer = config['wall_buffer']
+        self.wander_step_size = config['wander_step_size']
+        self.wander_step_duration = config['wander_step_duration']
+        self.gravity_strength = config['gravity_strength']
+        self.p_symptomatic_on_infection = config['p_symptomatic_on_infection']
+        self.max_speed = config['max_speed']
+
+        # Virus config
+        self.infection_duration = config['infection_duration']
+        self.probability_of_infection_per_day = config['probability_of_infection_per_day']
+
+        # Travel config
+        self.travel_rate = config['travel_rate']
+
+        self.colors_set = config['colors_set']
 
         self.time = 0
         self.add_updater(lambda obj, dt: obj._update_time(dt))
@@ -70,6 +63,7 @@ class Simulation(VGroup):
                 city_size=self.city_size,
                 population=self.population,
                 person_config={
+                    'radius': self.radius,
                     'colors_set': self.colors_set,
                     'infection_radius': self.infection_radius,
                     'wall_buffer': self.wall_buffer,
@@ -96,7 +90,6 @@ class Simulation(VGroup):
         random_person = random.choice(random_city.people)
 
         random_person.set_status('I')
-        random_person.dot_obj.set_color(GREEN)
 
     def _update_time(self, delta_time):
         self.time += delta_time
@@ -132,7 +125,7 @@ class Simulation(VGroup):
                         person.repel_from_people = repel_from_people_positions[np.argsort(
                             distances_from_all_repel_people)[1:person.repel_from_max_number_of_people + 1]]
 
-                    if self.travel_rate > 0:
+                    if self.travel_rate > 0 and len(self.cities) > 1:
                         path_func = path_along_arc(45 * DEGREES)
 
                         if random.random() < self.travel_rate * delta_time:

@@ -14,7 +14,7 @@ class Person(Animated):
 
         self.city_bounds = city_bounds
 
-        self.radius = .1
+        self.radius = config['radius']
         self.infection_radius = config['infection_radius']
 
         # Wall buffer is how much likely they'll get near the wall,
