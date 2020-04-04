@@ -5,7 +5,7 @@ from app.modules.graph import Graph
 
 class SimpleSimulationScene(Scene):
     number_of_cities = 1
-    city_size = 5
+    city_size = 7
     population = 100
 
     # Social Distancing
@@ -13,7 +13,7 @@ class SimpleSimulationScene(Scene):
 
     # Person config
     radius = .1
-    infection_radius = .75
+    infection_radius = .6
     wall_buffer = 1 / 3
     wander_step_size = 1
     wander_step_duration = 1
@@ -43,17 +43,32 @@ class SimpleSimulationScene(Scene):
     update_frequency = 1 / 15
 
     def setup(self):
+        self.sliders = None
+
         self.number_of_graphs = 3
 
+        self._add_sliders()
         self._add_simulation()
         self._position_camera()
         self._add_graph()
+        self._position_sliders()
 
     def construct(self):
         self._run_till_no_infections()
 
     def _add_simulation(self):
+        height = self.camera.frame.get_height() * .9
+        position = np.array([self.camera.frame.get_corner(
+            UR)[0], self.camera.frame.get_center()[1], 0])
+
+        if self.sliders:
+            height = self.camera.frame.get_height() - self.sliders.get_height()
+            position = self.camera.frame.get_corner(UR)
+
         self.simulation = Simulation(
+            sliders=self.sliders != None,
+            position=position,
+            height=height,
             config={
                 'number_of_cities': self.number_of_cities,
                 'city_size': self.city_size,
@@ -111,6 +126,19 @@ class SimpleSimulationScene(Scene):
 
         self.add(graphs)
 
+    def _add_sliders(self):
+        pass
+
+    def _position_sliders(self):
+        if self.sliders:
+            width, height = self.simulation.get_width() - 2, self.sliders.get_height()
+            position = self.camera.frame.get_corner(DR)
+
+            position[0] = self.simulation.get_center()[0]
+
+            self.sliders.set_width(width)
+            self.sliders.move_to(position + np.array([0, height / 2, 0]))
+
     def _position_camera(self):
         frame = self.camera.frame
         cities = self.simulation.cities
@@ -126,14 +154,15 @@ class SimpleSimulationScene(Scene):
         if cities_width > frame.get_width():
             frame.set_width(cities_width)
 
-        frame.next_to(cities.get_right(), LEFT, buff=-0.1 * cities.get_width())
-
     def _run_till_no_infections(self):
         while True:
-            self.wait(20)
-            # self.remove(self.simulation)
-            # break
+            self.wait(5)
 
             if self.simulation.get_stats()[1] == 0:
                 self.wait(5)
                 break
+
+    def wait_until_infection_threshold(self, threshold):
+        self.wait_until(
+            lambda: self.simulation.get_stats()[1] > threshold
+        )

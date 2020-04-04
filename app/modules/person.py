@@ -69,7 +69,7 @@ class Person(Animated):
         self.infection_ring_obj.set_style(
             stroke_color=color,
             stroke_opacity=0,
-            stroke_width=1
+            stroke_width=2
         )
 
         self.infection_ring_obj.move_to(self.get_center())

@@ -7,8 +7,12 @@ import copy
 
 
 class Simulation(VGroup):
-    def __init__(self, config={}, **kwargs):
+    def __init__(self, sliders=False, position=[], height=0, config={}, **kwargs):
         super().__init__(**kwargs)
+
+        self.sliders = sliders
+        self.position = position
+        self.height = height
 
         self.number_of_cities = config['number_of_cities']
         self.city_size = config['city_size']
@@ -78,6 +82,14 @@ class Simulation(VGroup):
             ))
 
         self.cities.arrange_in_grid(buff=LARGE_BUFF)
+        self.cities.set_height(self.height)
+
+        width, height = self.cities.get_width(), self.cities.get_height()
+        margin = np.array(
+            [(-width / 2) - (.2 if self.sliders else 0), (-height / 2) if self.sliders else 0, 0])
+
+        self.cities.move_to(
+            self.position + margin)
 
         self.add(self.cities)
 
@@ -114,7 +126,6 @@ class Simulation(VGroup):
                 if (infected_person.time - infected_person.infection_start_time) > self.virus.infection_duration:
                     infected_person.set_status('R')
 
-            if self.social_distance_factor > 0 or self.travel_rate > 0:
                 for person in susceptible_people + infected_people:
                     person.repel_from_people = []
 
@@ -182,3 +193,11 @@ class Simulation(VGroup):
         stats = self.get_stats()
 
         return stats / sum(stats)
+
+    def change_social_distance_factor(self, new_value, social_distancing_probability):
+        self.social_distance_factor = new_value
+
+        for city in self.cities:
+            for person in city.people:
+                if random.random() < social_distancing_probability:
+                    person.social_distance_factor = new_value
