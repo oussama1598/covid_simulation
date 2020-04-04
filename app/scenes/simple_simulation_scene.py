@@ -4,7 +4,11 @@ from app.modules.graph import Graph
 
 
 class SimpleSimulationScene(Scene):
+    update_frequency = 1 / 15
+
     def setup(self):
+        self.number_of_graphs = 3
+
         self._add_simulation()
         self._position_camera()
         self._add_graph()
@@ -18,28 +22,37 @@ class SimpleSimulationScene(Scene):
         self.add(self.simulation)
 
     def _add_graph(self):
+        graphs = VGroup()
+
         margin = .3
         frame = self.camera.frame
         frame_height, frame_width = frame.get_height(), frame.get_width()
 
         simulation_width = self.simulation.get_width()
 
-        graph = Graph(
-            # self.simulation,
-            width=frame_width - simulation_width - 2,
-            height=.75 * frame_height
-            # **self.graph_config,
-        )
+        for data_index, graph_name, color_name in zip(range(3), ['Susceptible', 'Infected', 'Recovered'], 'SIR'):
+            graphs.add(Graph(
+                graph_name=graph_name,
+                simulation=self.simulation,
+                width=frame_width - simulation_width - 2,
+                height=(frame_height / self.number_of_graphs) -
+                (self.number_of_graphs * .3),
+                color=self.simulation.colors_set[color_name],
+                data_index=data_index,
+                update_frequency=self.update_frequency
+                # **self.graph_config,
+            ))
 
         position = np.array(
             interpolate(frame.get_corner(UL), frame.get_corner(DL), .5)
         )
 
-        position[0] += graph.get_width() / 2 + margin
+        position[0] += graphs.get_width() / 2 + margin
 
-        graph.move_to(position)
+        graphs.arrange_in_grid(buff=MED_LARGE_BUFF)
+        graphs.move_to(position)
 
-        self.add(graph)
+        self.add(graphs)
 
     def _position_camera(self):
         frame = self.camera.frame
@@ -64,6 +77,6 @@ class SimpleSimulationScene(Scene):
             # self.remove(self.simulation)
             # break
 
-            if self.simulation.get_stats()['infected_people'] == 0:
+            if self.simulation.get_stats()[1] == 0:
                 self.wait(5)
                 break

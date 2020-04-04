@@ -1,6 +1,6 @@
 import numpy as np
 import random
-from manimlib.imports import VGroup, LARGE_BUFF, get_norm, path_along_arc, DEGREES, UpdateFromAlphaFunc, DL, UR, GREEN
+from manimlib.imports import *
 from app.modules.city import City
 from app.modules.virus import Virus
 import copy
@@ -22,15 +22,25 @@ class Simulation(VGroup):
     gravity_strength = 1
 
     social_distance_factor = 0
-    social_distance_color_threshold = 2
     repel_from_max_number_of_people = 10
 
     max_speed = 1
 
-    p_symptomatic_on_infection = .2
+    p_symptomatic_on_infection = 1
+
+    # Virus config
+    infection_duration = 5
+    probability_of_infection_per_day = .2
 
     # Travel
-    travel_rate = 0  # .02
+    travel_rate = .02
+
+    colors_set = {
+        'S': BLUE,
+        'I': RED,
+        'R': WHITE,
+        'A': YELLOW
+    }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -38,19 +48,19 @@ class Simulation(VGroup):
         self.time = 0
         self.add_updater(lambda obj, dt: obj._update_time(dt))
 
-        self.virus = Virus()
+        self.virus = Virus(
+            infection_duration=self.infection_duration,
+            probability_of_infection_per_day=self.probability_of_infection_per_day
+        )
 
         self.cities = VGroup()
 
         # For some reason this had to be set up in her otherwise the animation wont work
         self.add_updater(lambda obj, dt: obj._update_statuses(dt))
 
-        self.time_series = []
-        self.add_updater(lambda obj: obj._update_stats())
-
         self._add_cities()
         self._populate_cities()
-        # self._infect_random_person()
+        self._infect_random_person()
 
     def _add_cities(self):
         self.cities = VGroup()
@@ -60,13 +70,13 @@ class Simulation(VGroup):
                 city_size=self.city_size,
                 population=self.population,
                 person_config={
+                    'colors_set': self.colors_set,
                     'infection_radius': self.infection_radius,
                     'wall_buffer': self.wall_buffer,
                     'wander_step_size': self.wander_step_size,
                     'wander_step_duration': self.wander_step_duration,
                     'gravity_strength': self.gravity_strength,
                     'social_distance_factor': self.social_distance_factor,
-                    'social_distance_color_threshold': self.social_distance_color_threshold,
                     'repel_from_max_number_of_people': self.repel_from_max_number_of_people,
                     'max_speed': self.max_speed,
                     'p_symptomatic_on_infection': self.p_symptomatic_on_infection
@@ -149,7 +159,7 @@ class Simulation(VGroup):
                                 )
                             )
 
-    def _update_stats(self):
+    def get_stats(self):
         total_susceptible_people = 0
         total_infected_people = 0
         total_recovered_people = 0
@@ -162,12 +172,13 @@ class Simulation(VGroup):
             total_recovered_people += len(list(
                 filter(lambda person: person.status == 'R', city.people)))
 
-        self.time_series.append({
-            'time': self.time,
-            'susceptible_people': total_susceptible_people,
-            'infected_people': total_infected_people,
-            'recovered_people': total_recovered_people
-        })
+        return np.array([
+            total_susceptible_people,
+            total_infected_people,
+            total_recovered_people
+        ])
 
-    def get_stats(self):
-        return self.time_series[-1]
+    def get_averaged_stats(self):
+        stats = self.get_stats()
+
+        return stats / sum(stats)

@@ -1,7 +1,6 @@
 import numpy as np
 import random
-from manimlib.imports import Dot, VectorizedPoint, \
-    WHITE, rotate_vector, get_norm, RIGHT, Circle, RED, BLUE, YELLOW, UpdateFromAlphaFunc, interpolate_color, interpolate
+from manimlib.imports import *
 from app.modules.animated import Animated
 
 
@@ -11,12 +10,7 @@ class Person(Animated):
     def __init__(self, position=np.zeros(3), city_bounds=(None, None), config={}, ** kwargs):
         super().__init__(**kwargs)
 
-        self.color_sets = {
-            'S': BLUE,
-            'I': RED,
-            'R': WHITE,
-            'A': YELLOW
-        }
+        self.colors_set = config['colors_set']
 
         self.city_bounds = city_bounds
 
@@ -32,12 +26,12 @@ class Person(Animated):
         self.wander_step_duration = config['wander_step_duration']
         self.gravity_strength = config['gravity_strength']
         self.last_step_change_time = -1
+        self.moving_to = None
 
         self.p_symptomatic_on_infection = config['p_symptomatic_on_infection']
 
         # Social Distancing
         self.social_distance_factor = config['social_distance_factor']
-        self.social_distance_color_threshold = config['social_distance_color_threshold']
         self.repel_from_max_number_of_people = config['repel_from_max_number_of_people']
 
         self.repel_from_people = []
@@ -63,7 +57,7 @@ class Person(Animated):
         self.move_to(list(position))
 
     def _create_graphics(self):
-        color = self.color_sets[self.status]
+        color = self.colors_set[self.status]
 
         self.dot_obj = Dot()
         self.infection_ring_obj = Circle(radius=self.infection_radius)
@@ -93,16 +87,19 @@ class Person(Animated):
         position = self.get_center()
         force = np.zeros(3)
 
-        if self.wander_step_size and (self.time - self.last_step_change_time) > self.wander_step_duration:
-            movement_vector = rotate_vector(RIGHT, 2 * np.pi * random.random())
-            step_vector = self.wander_step_size * movement_vector
-            step_vector_norm = get_norm(step_vector)
+        if self.wander_step_size != 0:
+            if (self.time - self.last_step_change_time) > self.wander_step_duration:
+                movement_vector = rotate_vector(RIGHT, TAU * random.random())
 
-            if step_vector_norm:
-                force += self.gravity_strength * \
-                    step_vector / (step_vector_norm**3)
+                self.moving_to = position + self.wander_step_size * movement_vector
+                self.last_step_change = self.time
 
-                self.last_step_change_time = self.time
+        if self.moving_to is not None:
+            to = (self.moving_to - position)
+
+            dist = get_norm(to)
+            if dist != 0:
+                force += self.gravity_strength * to / (dist**3)
 
         wall_force = np.zeros(3)
 
@@ -169,8 +166,8 @@ class Person(Animated):
         self.dot_obj.set_color(color)
 
     def set_status(self, status):
-        start_color = self.color_sets[self.status]
-        end_color = self.color_sets[status]
+        start_color = self.colors_set[self.status]
+        end_color = self.colors_set[status]
 
         self.status = status
 
@@ -181,7 +178,7 @@ class Person(Animated):
                 self.symptomatic = True
             else:
                 self.symptomatic = False
-                end_color = self.color_sets['A']
+                end_color = self.colors_set['A']
 
             self.add_animation(
                 UpdateFromAlphaFunc(
