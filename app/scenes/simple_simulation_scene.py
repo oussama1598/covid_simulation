@@ -66,7 +66,7 @@ class SimpleSimulationScene(Scene):
             position = self.camera.frame.get_corner(UR)
 
         self.simulation = Simulation(
-            sliders=self.sliders != None,
+            sliders=self.sliders,
             position=position,
             height=height,
             config={

@@ -107,6 +107,10 @@ class Simulation(VGroup):
         self.time += delta_time
 
     def _update_statuses(self, delta_time):
+        for slider in self.sliders:
+            if slider.is_animating:
+                return
+
         for city in self.cities:
             susceptible_people = list(
                 filter(lambda person: person.status == 'S', city.people))
